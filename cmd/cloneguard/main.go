@@ -14,7 +14,7 @@ import (
 	"cloneguard/internal/scanner"
 )
 
-const version = "0.1.0"
+var version = "0.1.0" // overridden at release time via -ldflags
 
 // Exit codes: 0 clean, 1 caution, 2 suspicious, 3 dangerous, 10 usage or I/O error.
 const exitError = 10
