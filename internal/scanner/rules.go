@@ -72,6 +72,13 @@ var lineRules = []lineRule{
 		why:     "The code talks to a bare IP address instead of a named website. Legitimate apps almost always use a domain name.",
 	},
 	{
+		id: "connects-by-socket-to-ip", title: "Opens a raw socket to an IP address", sev: Medium, cat: catNetwork, scope: scopeCode,
+		re: rx(`(?i)(\bnet\.(connect|createConnection)|\bsocket\.(create_connection|socket)|\.connect\s*\(|TcpStream::connect|TCPSocket\.new|\bnet\.Dial)[^\n]{0,80}?\b\d{1,3}(\.\d{1,3}){3}\b`),
+		// Quote-anchored so "110.x" is not mistaken for "10.x".
+		exclude: rx(`["'](127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.|169\.254\.)`),
+		why:     "The code opens a plain network socket straight to a bare IP address, with no web address involved. Stolen files are often sent this way because it looks nothing like a normal web request.",
+	},
+	{
 		id: "uses-dropoff-service", title: "Uses a known data drop-off service", sev: High, cat: catNetwork, scope: scopeCodeConfig,
 		re:  rx(`(?i)discord(app)?\.com/api/webhooks|api\.telegram\.org/bot|pastebin\.com/raw|\bhastebin\b|transfer\.sh|\bfile\.io\b|webhook\.site|requestbin|pipedream\.net|interact\.sh|oast\.(pro|live|site|online|fun|me)\b`),
 		why: "Webhooks, paste sites and request catchers are popular places for stolen data to be sent, because they are free and anonymous.",

@@ -44,7 +44,7 @@ var (
 var (
 	obfuscatedIdent = rx(`\b_0x[0-9a-fA-F]{3,6}\b`)
 	// Calls that actually send data somewhere (a bare URL in a comment does not count).
-	netCall       = rx(`(?i)\bfetch\s*\(|\baxios\b|\brequests\.(get|post|put)\b|\burllib\b|\bhttps?\.(request|get|post)\b|\bhttp\.(Get|Post|NewRequest)\b|\bnet\.Dial\b|XMLHttpRequest|\bWebSocket\s*\(|\.post\s*\(|\bcurl\b|\bwget\b`)
+	netCall       = rx(`(?i)\bfetch\s*\(|\baxios\b|\brequests\.(get|post|put)\b|\burllib\b|\bhttps?\.(request|get|post)\b|\bhttp\.(Get|Post|NewRequest)\b|\bnet\.Dial\b|\bnet\.(connect|createConnection)\b|\bsocket\.(create_connection|socket)\b|TcpStream::connect|TCPSocket\.new|XMLHttpRequest|\bWebSocket\s*\(|\.post\s*\(|\bcurl\b|\bwget\b`)
 	whitespaceRun = rx(`[ \t]{3,}`)
 )
 

