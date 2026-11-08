@@ -241,3 +241,30 @@ func TestSocketToPublicIPWithoutCredentialsIsOnlyCaution(t *testing.T) {
 		t.Fatalf("want Caution with socket rule, got %s %v", res.Verdict, ids)
 	}
 }
+
+func TestCloudCredentialPathBuiltFromParts(t *testing.T) {
+	cases := map[string]string{
+		"aws.js":    "fs.readFileSync(path.join(os.homedir(), '.aws', 'credentials'))\n",
+		"aws.py":    "open(os.path.join(os.path.expanduser(\"~\"), \".aws\", \"credentials\"))\n",
+		"aws2.go":   "os.ReadFile(filepath.Join(home, \".aws\", \"config\"))\n",
+		"gcloud.js": "path.join(os.homedir(), '.config', 'gcloud', 'application_default_credentials.json')\n",
+		"azure.py":  "os.path.join(home, \".azure\", \"accessTokens.json\")\n",
+		"kube.js":   "path.join(os.homedir(), '.kube', 'config')\n",
+		"docker.go": "filepath.Join(home, \".docker\", \"config.json\")\n",
+	}
+	for name, body := range cases {
+		res, ids := scan(t, map[string]string{name: body})
+		if !ids["reads-cloud-credentials"] || res.Verdict != Suspicious {
+			t.Errorf("%s: want reads-cloud-credentials + Suspicious, got %s %v", name, res.Verdict, ids)
+		}
+	}
+}
+
+func TestPlainAwsConfigObjectIsNotFlagged(t *testing.T) {
+	res, ids := scan(t, map[string]string{
+		"app.js": "const region = config.aws.region;\nconst cfg = { aws: { config: 'x' } };\nconsole.log('.aws docs');\n",
+	})
+	if res.Verdict != Clean {
+		t.Fatalf("want Clean, got %s %v", res.Verdict, ids)
+	}
+}

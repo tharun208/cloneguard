@@ -45,7 +45,9 @@ var lineRules = []lineRule{
 	},
 	{
 		id: "reads-cloud-credentials", title: "Touches cloud or tool credentials", sev: High, cat: catCredentials, scope: scopeCode,
-		re:  rx(`(?i)\.aws[/\\]+(credentials|config)|\.config[/\\]+gcloud|\.azure[/\\]|\.kube[/\\]+config|\.docker[/\\]+config\.json|\.npmrc\b|\.netrc\b|\.git-credentials|\.pypirc\b`),
+		re: rx(`(?i)\.aws[/\\]+(credentials|config)|\.config[/\\]+gcloud|\.azure[/\\]|\.kube[/\\]+config|\.docker[/\\]+config\.json|\.npmrc\b|\.netrc\b|\.git-credentials|\.pypirc\b` +
+			// Same paths built from separate strings: join(home, ".aws", "credentials")
+			`|['"]\.aws['"]\s*,\s*['"](credentials|config)['"]|['"]\.config['"]\s*,\s*['"]gcloud['"]|['"]\.azure['"]|['"]\.kube['"]\s*,\s*['"]config['"]|['"]\.docker['"]\s*,\s*['"]config\.json['"]`),
 		why: "This code looks at files where AWS, Google Cloud, Kubernetes, npm or Git keep their login tokens.",
 	},
 	{
